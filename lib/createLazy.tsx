@@ -7,9 +7,14 @@ import {
   LazyPortal as BaseLazyPortal,
   LazyProps,
   LazySource,
-  PromiseCallback,
 } from './LazyPortal'
 import { loadRemoteComponentAsync } from './loadRemoteComponentAsync'
+
+
+type PromiseCallback<T> = {
+  readonly resolve: (result: T) => void
+  readonly reject: (error: Error) => void
+}
 
 type LazyTasks = {
   readonly [uri: string]: PromiseCallback<React.Component>[]
@@ -30,7 +35,7 @@ const buildCompletionHandler = (
       return resolve(maybeComponent)
     }
     return reject(
-      error || new Error(`[Lazy]: Failed to allocate for uri "${uri}".`)
+      error || new Error(`Failed to allocate for uri "${uri}".`)
     )
   })
 }
@@ -117,7 +122,7 @@ const buildOpenLazy = ({
         return loadRemoteComponentAsync(source)
       }
       throw new Error(
-        `[Lazy]: Attempted to instantiate a Lazy using a string, but dangerouslySetInnerJSX was not true.`
+        `Attempted to instantiate a Lazy using a string, but dangerouslySetInnerJSX was not true.`
       )
     } else if (source && typeof source === 'object') {
       const { uri } = source
@@ -128,7 +133,7 @@ const buildOpenLazy = ({
       }
     }
     throw new Error(
-      `[Lazy]: Expected valid source, encountered ${typeof source}.`
+      `Expected valid \`_lazy_source\` instead got: ${typeof source}`
     )
   }
 
@@ -151,16 +156,12 @@ export default function createLazy() {
     shouldOpenUri,
   })
 
-  const LazyPortal = (props: LazyProps) => (
-    <BaseLazyPortal {...props} shouldOpenLazy={shouldOpenLazy} />
-  )
-
-  const preload = async (uri: string): Promise<void> => {
-    await shouldOpenLazy({ uri }, { dangerouslySetInnerJSX: false })
-  }
-
   return Object.freeze({
-    LazyPortal,
-    preload,
+    Loadable(props: LazyProps) {
+      return <BaseLazyPortal {...props} _lazy_shouldOpenLazy={shouldOpenLazy} />
+    },
+    async preload(uri: string): Promise<void> {
+      await shouldOpenLazy({ uri }, { dangerouslySetInnerJSX: false })
+    },
   })
 }

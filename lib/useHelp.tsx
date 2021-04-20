@@ -1,19 +1,16 @@
 import * as React from "react";
-import { Platform } from "react-native";
 
 export type UseStateHook<T> = [
     { value: T | null; error: Error | null },
     (value: T | null) => void
 ];
 
-export function useForceUpdate(): {
-    readonly forceUpdate: () => void;
-} {
+export function useForceUpdate(): () => void {
     const [, setState] = React.useState(false);
     const forceUpdate = React.useCallback(() => {
         setState((e) => !e);
     }, [setState]);
-    return { forceUpdate };
+    return forceUpdate;
 }
 
 export function useSafeState<T>(initialValue?: {
@@ -43,14 +40,10 @@ export function useResolvedValue<T>(
 
         method()
             .then((value) => {
-                if (isMounted.current) {
-                    setState({ value });
-                }
+                if (isMounted.current) setState({ value });
             })
             .catch((error) => {
-                if (isMounted.current) {
-                    setState({ error });
-                }
+                if (isMounted.current) setState({ error });
             });
     }, [method]);
 
@@ -59,22 +52,6 @@ export function useResolvedValue<T>(
 
 export function useMounted() {
     return React.useRef(true);
-}
-
-export function getRemoteFileURLForMetro(
-    baseUrl: string,
-    filePath: string
-): string {
-    const shallow = false;
-    // `http://192.168.1.76:19000/screens/home.bundle?platform=ios&dev=true&hot=false&minify=false`
-    // modulesOnly=true
-    // http://192.168.1.76:19000/screens/home.bundle?platform=ios&dev=true&hot=false&minify=false&modulesOnly=true&shallow=true&runModule=false
-    return `${baseUrl}${filePath}?platform=${Platform.OS}&dev=${String(
-        __DEV__
-    )}&hot=false&minify=${String(
-        !__DEV__
-    )}&modulesOnly=true&shallow=${shallow}&runModule=true`;
-    // return `${baseUrl}${filePath}?platform=${Platform.OS}&dev=${String(__DEV__)}&hot=false&minify=${String(!__DEV__)}&modulesOnly=true&shallow=true&runModule=false`
 }
 
 export function useJSONRequest<T extends Record<string, any>>(

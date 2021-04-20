@@ -1,12 +1,8 @@
 import * as React from 'react'
 import { ActivityIndicator, Text, View } from 'react-native'
 
-import { useForceUpdate } from './useHelp'
+import { useForceUpdate, useMounted, useSafeState } from './useHelp'
 
-export type PromiseCallback<T> = {
-  readonly resolve: (result: T) => void
-  readonly reject: (error: Error) => void
-}
 
 export type LazySource =
   | {
@@ -18,63 +14,49 @@ export type LazyOptions = {
   readonly dangerouslySetInnerJSX: boolean
 }
 
+// Prefix props so it's harder to clash with a custom component's props...
 export type LazyProps = {
-  readonly source: LazySource
-  readonly renderLoading?: () => JSX.Element
-  readonly renderError?: (props: { readonly error: Error }) => JSX.Element
-  readonly dangerouslySetInnerJSX?: boolean
-  readonly onError?: (error: Error) => void
-  readonly shouldOpenLazy?: (
+  readonly _lazy_source: LazySource
+  readonly _lazy_dangerouslySetInnerJSX?: boolean
+  readonly _lazy_shouldOpenLazy?: (
     source: LazySource,
     options: LazyOptions
   ) => Promise<React.Component>
 }
 
 export function LazyPortal({
-  source,
-  renderLoading = () => <React.Fragment />,
-  renderError = () => <React.Fragment />,
-  dangerouslySetInnerJSX = false,
-  onError = console.error,
-  shouldOpenLazy,
+  _lazy_source,
+  _lazy_dangerouslySetInnerJSX = false,
+  _lazy_shouldOpenLazy,
   ...extras
 }: LazyProps): JSX.Element {
-  const { forceUpdate } = useForceUpdate()
-  const [Component, setComponent] = React.useState<React.Component | null>(null)
-  const [error, setError] = React.useState<Error | null>(null)
+  const forceUpdate = useForceUpdate()
+  const [state, setState] = useSafeState<React.Component>();
+  const isMounted = useMounted()
   React.useEffect(() => {
-    ; (async () => {
-      try {
-        if (typeof shouldOpenLazy === 'function') {
-          const Component = await shouldOpenLazy(source, {
-            dangerouslySetInnerJSX,
-          })
-          return setComponent(() => Component)
-        }
-        throw new Error(
-          `Expected function shouldOpenLazy, encountered ${typeof shouldOpenLazy}.`
-        )
-      } catch (e) {
-        setComponent(() => null)
-        setError(e)
-        onError(e)
-        return forceUpdate()
+    _lazy_shouldOpenLazy(_lazy_source, {
+      dangerouslySetInnerJSX: _lazy_dangerouslySetInnerJSX,
+    }).then(value => {
+      if (isMounted.current) setState({ value });
+    }).catch(error => {
+      if (isMounted.current) {
+        console.error(error);
+        setState({ error })
+        forceUpdate()
       }
-    })()
+    })
   }, [
-    shouldOpenLazy,
-    source,
-    setComponent,
+    _lazy_shouldOpenLazy,
+    _lazy_source,
+    setState,
     forceUpdate,
-    setError,
-    dangerouslySetInnerJSX,
-    onError,
+    _lazy_dangerouslySetInnerJSX,
   ])
 
-  if (typeof Component === 'function') {
-    return React.createElement(Component, extras);
-  } else if (error) {
-    return <ErrorView error={error} />
+  if (typeof state.value === 'function') {
+    return React.createElement(state.value, extras);
+  } else if (state.error) {
+    return <ErrorView error={state.error} />
   }
   return <Loading />
 }
@@ -83,7 +65,8 @@ function ErrorView({ error }) {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text>{error.message}</Text>
-      <Text>{error.stack}</Text>
+      {/* the stack needs to be symbolicated before it can be useful */}
+      {false && <Text>{error.stack}</Text>}
     </View>
   )
 }

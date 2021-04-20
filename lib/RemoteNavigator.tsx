@@ -1,9 +1,10 @@
 import * as React from 'react'
 import createLazy from './createLazy'
-import getDevServer from 'react-native/Libraries/Core/Devtools/getDevServer'
-import { getRemoteFileURLForMetro, useJSONRequest } from './useHelp'
+import { useJSONRequest } from './useHelp'
+import { getDevServerUrl, getDevServerUrlForFilePath } from './getDevServer'
+import { useNavigator } from './getNavigator'
 
-const { LazyPortal } = createLazy()
+const { Loadable } = createLazy()
 
 // 1. Create a component that can load a remote React component given a file path via `getRemoteFileURLForMetro`
 // 2. Load a hosted JSON file from Metro dev server
@@ -28,14 +29,12 @@ type Page = {
 
 function RemoteNavigator({
   info,
-  baseURL,
 }: {
   info: DirectoryInfo
-  baseURL: string
 }) {
   const { navigator: type, ...innerProps } = info.config
   const pages = info.pages
-  const Nav = React.useMemo(() => getNavigator(type)(), [type])
+  const Nav = useNavigator(type);
   let root =
     info.root.length > 0
       ? info.root.endsWith('/')
@@ -46,57 +45,42 @@ function RemoteNavigator({
   const screens = React.useMemo(
     () =>
       pages.map((route) => {
-        let key = route.name.includes('.')
+        // Remove the last extension component
+        // TODO: do this in the middleware so extension resolution can be accounted for.
+        let fileName = route.name.includes('.')
           ? route.name.split('.').slice(0, -1).join('.')
-          : route.name
-        let props: any = {}
+          : route.name;
+
+        let component: (props: any) => JSX.Element;
         if (route.directoryInfo) {
-          props.component = function () {
+          // Is directory
+          component = function () {
             return (
-              <RemoteNavigator baseURL={baseURL} info={route.directoryInfo} />
+              <RemoteNavigator info={route.directoryInfo} />
             )
           }
         } else {
-          const uri = getRemoteFileURLForMetro(
-            baseURL,
-            `pages/${root}${key + '.bundle'}`
+          // TODO: Maybe move this into the middleware.
+          const filePathWithoutExtension = `pages/${root}${fileName}`
+          const uri = getDevServerUrlForFilePath(
+            filePathWithoutExtension
           )
-          props.component = function (props) {
-            return <LazyPortal source={{ uri }} {...props} />
+          component = function (props) {
+            return <Loadable _lazy_source={{ uri }} {...props} />
           }
         }
-        return <Nav.Screen name={key} key={key} {...props} />
+        return React.createElement(Nav.Screen, { name: fileName, key: fileName }, component)
       }),
     [type]
   )
 
-  return React.useMemo(() => <Nav.Navigator {...innerProps}>{screens}</Nav.Navigator>, [])
+  return React.createElement(Nav.Navigator, innerProps, screens);
 }
 
-function getNavigator(name) {
-  if (name === 'bottom-tabs')
-    return require('@react-navigation/bottom-tabs').createBottomTabNavigator
-  if (name === 'drawer')
-    return require('@react-navigation/drawer').createDrawerNavigator
-  if (name === 'stack')
-    return require('@react-navigation/stack').createStackNavigator
-  if (name === 'native-stack')
-    return require('@react-navigation/stack').createStackNavigator
-  if (name === 'material-top-tabs')
-    return require('@react-navigation/material-top-tabs').createMaterialTopTabNavigator
-  if (name === 'material-bottom-tabs')
-    return require('@react-navigation/material-bottom-tabs').createMaterialBottomTabNavigator
-  if (name === 'native-stack')
-    return require('react-native-screens/native-stack').createNativeStackNavigator
-  throw new Error('unknown type: ' + name)
-}
-
-// Get the dev server URL
-const baseURL = getDevServer().url
 
 export default function AutoNavigator() {
   // Request the routes from expo/metro-config `/routes` for path `/`
-  const { value, error } = useJSONRequest<DirectoryInfo>(baseURL + 'routes', {
+  const { value, error } = useJSONRequest<DirectoryInfo>(getDevServerUrl() + 'routes', {
     headers: { dir: '/' },
   })
 
@@ -108,5 +92,5 @@ export default function AutoNavigator() {
     return null
   }
 
-  return <RemoteNavigator baseURL={baseURL} info={value} />
+  return <RemoteNavigator info={value} />
 }
