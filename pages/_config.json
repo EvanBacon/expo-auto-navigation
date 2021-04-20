@@ -1,3 +1,4 @@
 {
-    "navigator": "bottom-tabs"
+    "navigator": "bottom-tabs",
+    "initialRouteName": "stack"
 }

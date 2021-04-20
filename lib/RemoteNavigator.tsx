@@ -33,7 +33,7 @@ function RemoteNavigator({
   info: DirectoryInfo
   baseURL: string
 }) {
-  const type = info.config.navigator
+  const { navigator: type, ...innerProps } = info.config
   const pages = info.pages
   const Nav = React.useMemo(() => getNavigator(type)(), [type])
   let root =
@@ -70,7 +70,7 @@ function RemoteNavigator({
     [type]
   )
 
-  return React.useMemo(() => <Nav.Navigator>{screens}</Nav.Navigator>, [])
+  return React.useMemo(() => <Nav.Navigator {...innerProps}>{screens}</Nav.Navigator>, [])
 }
 
 function getNavigator(name) {
