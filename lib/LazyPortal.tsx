@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ActivityIndicator, View } from 'react-native'
+import { ActivityIndicator, Text, View } from 'react-native'
 
 import { useForceUpdate } from './useHelp'
 
@@ -72,12 +72,20 @@ export function LazyPortal({
   ])
 
   if (typeof Component === 'function') {
-    // @ts-ignore
-    return <Component {...extras} />
+    return React.createElement(Component, extras);
   } else if (error) {
-    return renderError({ error })
+    return <ErrorView error={error} />
   }
   return <Loading />
+}
+
+function ErrorView({ error }) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>{error.message}</Text>
+      <Text>{error.stack}</Text>
+    </View>
+  )
 }
 
 function Loading() {
