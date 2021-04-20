@@ -3,6 +3,7 @@ const navigationRoutesMiddleware = require("./middleware/navigationRoutesMiddlew
 
 const defaultConfig = getDefaultConfig(__dirname);
 
+// Style copied from Webpack, this is used to identify where code is located.
 defaultConfig.serializer.getRunModuleStatement = (moduleId) =>
   `/*! metro-run-module */ __r(${moduleId});`;
 

@@ -1,59 +1,34 @@
-import * as React from 'react';
+import * as React from 'react'
+import { ActivityIndicator, View } from 'react-native'
 
-import { AxiosPromise, AxiosRequestConfig, AxiosResponse } from "axios";
+import { useForceUpdate } from './useHelp'
 
 export type PromiseCallback<T> = {
-  readonly resolve: (result: T) => void;
-  readonly reject: (error: Error) => void;
-};
+  readonly resolve: (result: T) => void
+  readonly reject: (error: Error) => void
+}
 
 export type LazySource =
   | {
-    readonly uri: string;
+    readonly uri: string
   }
-  | string;
-
-export type LazyComponentCache = {
-  readonly [uri: string]: React.Component | null;
-};
-
-export type LazyTasks = {
-  readonly [uri: string]: PromiseCallback<React.Component>[];
-};
+  | string
 
 export type LazyOptions = {
-  readonly dangerouslySetInnerJSX: boolean;
-};
-
-export type LazyContextConfig = {
-  readonly buildRequestForUri?: (
-    config: AxiosRequestConfig
-  ) => AxiosPromise<string>;
-  readonly global?: any;
-};
-
-function useForceUpdate(): {
-  readonly forceUpdate: () => void;
-} {
-  const [, setState] = React.useState(false);
-  const forceUpdate = React.useCallback(() => {
-    setState(e => !e);
-  }, [setState]);
-  return { forceUpdate };
+  readonly dangerouslySetInnerJSX: boolean
 }
 
-
 export type LazyProps = {
-  readonly source: LazySource;
-  readonly renderLoading?: () => JSX.Element;
-  readonly renderError?: (props: { readonly error: Error }) => JSX.Element;
-  readonly dangerouslySetInnerJSX?: boolean;
-  readonly onError?: (error: Error) => void;
+  readonly source: LazySource
+  readonly renderLoading?: () => JSX.Element
+  readonly renderError?: (props: { readonly error: Error }) => JSX.Element
+  readonly dangerouslySetInnerJSX?: boolean
+  readonly onError?: (error: Error) => void
   readonly shouldOpenLazy?: (
     source: LazySource,
     options: LazyOptions
-  ) => Promise<React.Component>;
-};
+  ) => Promise<React.Component>
+}
 
 export function LazyPortal({
   source,
@@ -64,27 +39,28 @@ export function LazyPortal({
   shouldOpenLazy,
   ...extras
 }: LazyProps): JSX.Element {
-  const { forceUpdate } = useForceUpdate();
-  const [Component, setComponent] = React.useState<React.Component | null>(null);
-  const [error, setError] = React.useState<Error | null>(null);
+  const { forceUpdate } = useForceUpdate()
+  const [Component, setComponent] = React.useState<React.Component | null>(null)
+  const [error, setError] = React.useState<Error | null>(null)
   React.useEffect(() => {
-    (async () => {
+    ; (async () => {
       try {
         if (typeof shouldOpenLazy === 'function') {
-          const Component = await shouldOpenLazy(source, { dangerouslySetInnerJSX });
-          return setComponent(() => Component);
+          const Component = await shouldOpenLazy(source, {
+            dangerouslySetInnerJSX,
+          })
+          return setComponent(() => Component)
         }
         throw new Error(
-          `[Lazy]: Expected function shouldOpenLazy, encountered ${typeof shouldOpenLazy
-          }.`
-        );
+          `Expected function shouldOpenLazy, encountered ${typeof shouldOpenLazy}.`
+        )
       } catch (e) {
-        setComponent(() => null);
-        setError(e);
-        onError(e);
-        return forceUpdate();
+        setComponent(() => null)
+        setError(e)
+        onError(e)
+        return forceUpdate()
       }
-    })();
+    })()
   }, [
     shouldOpenLazy,
     source,
@@ -93,14 +69,21 @@ export function LazyPortal({
     setError,
     dangerouslySetInnerJSX,
     onError,
-  ]);
+  ])
 
   if (typeof Component === 'function') {
-    return (
-      <Component {...extras} />
-    );
+    // @ts-ignore
+    return <Component {...extras} />
   } else if (error) {
-    return renderError({ error });
+    return renderError({ error })
   }
-  return renderLoading();
+  return <Loading />
+}
+
+function Loading() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <ActivityIndicator />
+    </View>
+  )
 }

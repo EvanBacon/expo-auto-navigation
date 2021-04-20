@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "yolo18",
-    "slug": "yolo18",
+    "name": "auto nav",
+    "slug": "autonav",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,7 +18,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bacon.yolo18"
+      "bundleIdentifier": "com.bacon.auto-nav"
     },
     "android": {
       "adaptiveIcon": {
