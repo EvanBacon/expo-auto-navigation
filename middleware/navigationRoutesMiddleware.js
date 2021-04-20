@@ -5,6 +5,7 @@ const path = require("path");
 
 function pagesForDirectory(dir, root = "") {
   const files = fs.readdirSync(dir);
+  if (!files.length) return null;
   const results = {
     pages: [],
     root,
@@ -27,10 +28,14 @@ function pagesForDirectory(dir, root = "") {
     };
     const stat = fs.statSync(filePath);
     if (stat.isDirectory()) {
-      page.directoryInfo = pagesForDirectory(
+      const info = pagesForDirectory(
         filePath,
         path.join(root || "", fileName)
       );
+      if (!info) {
+        continue;
+      }
+      page.directoryInfo = info;
     }
     results.pages.push(page);
   }
