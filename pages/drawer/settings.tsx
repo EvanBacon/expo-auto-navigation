@@ -3,13 +3,13 @@ import { Text, View } from 'react-native';
 
 import { TabBarIcon } from '../../components/TabBarIcon';
 
-export default function HomeScreen({ navigation }) {
+export default function Screen({ navigation }) {
 
   React.useLayoutEffect(() => {
     if (navigation)
       navigation.setOptions({
-        title: "Notifications",
-        tabBarIcon: ({ color }) => (
+        title: "Duo",
+        drawerIcon: ({ color }) => (
           <TabBarIcon name="airplane" color={color} />
         ),
       })
@@ -17,10 +17,13 @@ export default function HomeScreen({ navigation }) {
 
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white' }}>
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text style={{ fontSize: 24, textAlign: 'center', fontWeight: 'bold' }} onPress={() => {
-        navigation.push('settings')
-      }}>Hello Notifications</Text>
+        navigation.navigate('index')
+      }}>Hello Duo</Text>
+      <Text style={{ fontSize: 24, textAlign: 'center', fontWeight: 'bold' }} onPress={() => {
+        navigation.toggleDrawer()
+      }}>Toggle</Text>
     </View>
   );
 }
