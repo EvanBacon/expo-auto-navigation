@@ -61,7 +61,7 @@ const buildRequestOpenUri = ({
     const result = await fetch(uri, {
       method: 'get',
     }).then((res) => res.text())
-    const Component = await loadRemoteComponentAsync(result)
+    const Component = await loadRemoteComponentAsync(result, uri)
     Object.assign(cache, { [uri]: Component })
     return shouldComplete(uri)
   } catch (e) {

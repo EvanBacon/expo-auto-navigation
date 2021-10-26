@@ -13,17 +13,23 @@ const sharedChunks = Object.freeze({
 
 // This part is specific to Metro bundler, if you want to use a better bundler, you'll need to change this.
 export const loadRemoteComponentAsync = async (
-  src: string
+  src: string,
+  uri: string
 ): Promise<Component> => {
   // Replace template comment with module access
   src = src.split("/*! metro-run-module */").join('exports["default"] = ');
 
-  const injected = `${Object.keys(sharedChunks)
-    .map((key) => `var ${key}=${globalName}.${key};`)
-    .join("\n")}; const exports={}; ${src}\n; return exports.default`;
+  // @ts-ignore
+  const globalEvalWithSourceUrl = global.globalEvalWithSourceUrl;
+  const results = await (() => {
+    if (globalEvalWithSourceUrl) {
+      return globalEvalWithSourceUrl(src, uri);
+    } else {
+      return eval(src);
+    }
+  }).call(global);
 
-  // console.log('SRC:\n', injected)
-  const results = await new Function(globalName, injected)(global);
+  // const results = await new Function(globalName, injected)(global);
 
   const Component = results.default;
 

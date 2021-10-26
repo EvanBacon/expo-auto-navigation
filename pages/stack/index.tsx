@@ -8,11 +8,12 @@ export default function Screen({ navigation, route }) {
     })
   }, [navigation])
 
+  // throw new Error('hey')
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text style={{ fontSize: 24, textAlign: 'center', fontWeight: 'bold' }} onPress={() => {
         navigation.push('index', { index: (route.params?.index || 0) + 1 })
-      }}>Push Next</Text>
+      }}>Push Next 2</Text>
     </View>
   );
 }
